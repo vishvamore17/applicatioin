@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Query } from 'appwrite';
 import { account, databases } from '../lib/appwrite';
 import { styles } from '../constants/LoginScreen.styles';
+import { Linking } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = '681c429800281e8a99bd';
 
 const LoginScreen = () => {
+    const params = useLocalSearchParams();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -24,6 +27,10 @@ const LoginScreen = () => {
     const [resetConfirmPassword, setResetConfirmPassword] = useState('');
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const [resetUserId, setResetUserId] = useState('');
+    const [resetSecret, setResetSecret] = useState('');
+    const [resetSuccess, setResetSuccess] = useState(false);
+    const [isCheckingSession, setIsCheckingSession] = useState(true);
 
     const resetFields = () => {
         setEmail('');
@@ -35,6 +42,67 @@ const LoginScreen = () => {
         setResetConfirmPassword('');
     };
 
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const user = await account.get();
+                if (user) {
+                    router.replace(user.labels?.includes('admin') ? '/home' : '/userapp/home');
+                }
+            } finally {
+                setIsCheckingSession(false);
+            }
+        };
+        checkSession();
+    }, []);
+
+   
+    useEffect(() => {
+        if (params?.resetPassword === 'true' && params.userId && params.secret) {
+            setResetModalVisible(true);
+            setResetUserId(params.userId as string);
+            setResetSecret(params.secret as string);
+        }
+    }, [params]);
+
+    useEffect(() => {
+        const handleDeepLink = (event: { url: string }) => {
+            const url = event.url;
+            console.log('Deep link URL:', url);
+
+            if (url.includes('cloud.appwrite.io/v1/recovery')) {
+                const params = new URLSearchParams(url.split('?')[1]);
+
+                if (params.get('package') === 'com.markwatson.service_vale') {
+                    const userId = params.get('userId');
+                    const secret = params.get('secret');
+
+                    if (userId && secret) {
+                        router.navigate({
+                            pathname: '/reset-password',
+                            params: { userId, secret }
+                        });
+                    }
+                }
+            }
+        };
+
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        Linking.getInitialURL().then(url => {
+            if (url) handleDeepLink({ url });
+        });
+
+        return () => subscription.remove();
+    }, []);
+
+ if (isCheckingSession) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+                <ActivityIndicator size="large" />
+            </View>
+        );
+    }
     const handleLogin = async () => {
         if (email === '' || password === '') {
             Alert.alert('Error', 'Please fill in all fields');
@@ -44,18 +112,10 @@ const LoginScreen = () => {
             Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
         } else {
             try {
-                try {
-                    const current = await account.get();
-                    if (current) {
-                        await account.deleteSession('current');
-                    }
-                } catch (error) { }
-                const session = await account.createEmailPasswordSession(email, password);
-                console.log('Login Success:', session);
+                await account.createEmailPasswordSession(email, password);
                 const user = await account.get();
-                console.log('Current user:', user);
                 const isAdmin = user.labels?.includes('admin');
-                Alert.alert('Success', `Logged in as ${email}`);
+                Alert.alert('Success', `Welcome`);
                 resetFields();
                 if (isAdmin) {
                     router.replace('/home');
@@ -63,7 +123,6 @@ const LoginScreen = () => {
                     router.replace('/userapp/home');
                 }
             } catch (error: any) {
-                console.error('Login Error:', error);
                 Alert.alert('Login Error', error?.message || 'An unknown error occurred');
             }
         }
@@ -105,32 +164,62 @@ const LoginScreen = () => {
     };
 
     const handleSendOTP = async () => {
-        if (forgotEmail === '') {
-            Alert.alert('Error', 'Please enter your email');
-        } else if (!emailRegex.test(forgotEmail)) {
-            Alert.alert('Error', 'Invalid email address');
-        } else {
-            try {
-                await account.createRecovery(forgotEmail, 'https://your-app.com/reset-password');
-                Alert.alert('OTP Sent', `A recovery email has been sent to ${forgotEmail}`);
-                setForgotModalVisible(false);
-            } catch (error) {
-                Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send recovery email');
-            }
+        try {
+            const resetUrl = `https://cloud.appwrite.io/v1/recovery?package=com.markwatson.service_vale`;
+
+            await account.createRecovery(forgotEmail, resetUrl);
+            Alert.alert('Email Sent', 'Check your email for reset instructions');
+            setForgotEmail('');
+            setForgotModalVisible(false);
+        } catch (error: any) {
+            console.error('Recovery Error:', error);
+            Alert.alert('Error', error?.message || 'Failed to send recovery email');
         }
     };
 
-    const handleResetPassword = () => {
+    const handleResetPassword = async () => {
         if (!newPassword || !resetConfirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
-        } else if (newPassword !== resetConfirmPassword) {
+            return;
+        }
+
+        if (newPassword !== resetConfirmPassword) {
             Alert.alert('Error', 'Passwords do not match');
-        } else if (!passwordRegex.test(newPassword)) {
+            return;
+        }
+
+        if (!passwordRegex.test(newPassword)) {
             Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
-        } else {
-            Alert.alert('Success', 'Your password has been reset');
-            resetFields();
-            setResetModalVisible(false);
+            return;
+        }
+
+        try {
+            if (!resetUserId || !resetSecret) {
+                throw new Error('Invalid reset credentials');
+            }
+
+            await account.updateRecovery(resetUserId, resetSecret, newPassword);
+
+            Alert.alert(
+                'Success',
+                'Your password has been reset successfully',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            resetFields();
+                            setResetUserId('');
+                            setResetSecret('');
+                            setResetModalVisible(false);
+                            setResetSuccess(true);
+                        }
+                    }
+                ]
+            );
+
+        } catch (error: any) {
+            console.error('Password Reset Error:', error);
+            Alert.alert('Error', error?.message || 'Failed to reset password');
         }
     };
 
@@ -138,7 +227,7 @@ const LoginScreen = () => {
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
             <ScrollView
                 contentContainerStyle={[styles.container]}
@@ -156,7 +245,7 @@ const LoginScreen = () => {
                 <Modal transparent animationType="fade" visible={forgotModalVisible}>
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalCard}>
-                            <Text style={styles.modalTitle}>Reset Password</Text>
+                            <Text style={styles.modalTitle}>Forgot Password</Text>
                             <Text style={styles.modalSubtitle}>Enter your email to receive a recovery link</Text>
                             <TextInput
                                 style={styles.modalInput}
@@ -189,7 +278,7 @@ const LoginScreen = () => {
                 <Modal transparent animationType="fade" visible={resetModalVisible}>
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalCard}>
-                            <Text style={styles.modalTitle}>Set New Password</Text>
+                            <Text style={styles.modalTitle}>Reset Password</Text>
                             <View style={styles.passwordInputContainer}>
                                 <TextInput
                                     style={styles.modalInput}

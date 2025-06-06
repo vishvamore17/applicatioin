@@ -19,7 +19,7 @@ import { Audio } from 'expo-av';
 import styles from '../constants/userapp/notification';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
-const NOTIFICATIONS_COLLECTION = 'note_id';
+const NOTIFICATIONS_COLLECTION = 'admin_id';
 
 const AdminNotificationPage = () => {
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -52,7 +52,8 @@ const AdminNotificationPage = () => {
                 DATABASE_ID,
                 NOTIFICATIONS_COLLECTION,
                 [
-                    Query.orderDesc('createdAt')
+                    Query.orderDesc('$createdAt')
+
                 ]
             );
 
@@ -151,12 +152,10 @@ const AdminNotificationPage = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => router.push('/home')}>
-                        <MaterialIcons name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Notifications</Text>
-                </View>
+                <TouchableOpacity onPress={() => router.push('/home')}>
+                    <MaterialIcons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Notifications</Text>
                 {notifications.length > 0 ? (
                     <TouchableOpacity onPress={deleteAllNotifications}>
                         <MaterialIcons name="delete" size={24} color="#fff" />

@@ -169,7 +169,7 @@ const PhotoComparisonPage = () => {
         }
     };
 
-    const createNotification = async (description: string, relatedDocumentId: string) => {
+      const createNotification = async (description: string, relatedDocumentId: string) => {
         const notifId = ID.unique();
         try {
             await databases.createDocument(DATABASE_ID, NOTIFICATIONS_COLLECTION, notifId, {
@@ -202,7 +202,6 @@ const PhotoComparisonPage = () => {
         setIsUploading(true);
         try {
             const notesWithName = userName ? `${userName}\n${notes}` : notes;
-            const { userName: parsedUserName, userNotes } = parseNotes(notesWithName);
             if (beforeImage && !afterImage) {
                 const beforeFileId = await uploadImageToStorage(beforeImage);
                 const docId = ID.unique();
@@ -213,6 +212,10 @@ const PhotoComparisonPage = () => {
                     date: new Date().toISOString(),
                     userEmail: userEmail,
                 });
+                await createNotification(
+                    `New BEFORE photo added. Notes: ${notesWithName || 'No notes provided'}`,
+                    docId
+                );
             } else if (afterImage && !beforeImage) {
                 const afterFileId = await uploadImageToStorage(afterImage);
                 const latest = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
@@ -231,7 +234,7 @@ const PhotoComparisonPage = () => {
                     userEmail: userEmail,
                 });
                 await createNotification(
-                    `\nNotes:\n ${userNotes || 'No notes provided'}`,
+                    `AFTER photo added to existing set. Notes: ${notesWithName || 'No notes provided'}`,
                     docId
                 );
             } else {
@@ -248,7 +251,7 @@ const PhotoComparisonPage = () => {
                     userEmail: userEmail,
                 });
                 await createNotification(
-                    `\nNotes:\n ${userNotes || 'No notes provided'}`,
+                    `COMPLETE: BEFORE and AFTER photos submitted! User: ${userName || 'Unknown'}`,
                     docId
                 );
             }

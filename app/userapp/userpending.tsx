@@ -161,7 +161,7 @@ const PendingServicesScreenUser = () => {
     setServices(allServices);
   };
 
-  const createNotification = async (description: string, userEmail: string) => {
+ const createNotification = async (description: string, userEmail: string) => {
     try {
       await databases.createDocument(
         DATABASE_ID,
@@ -169,14 +169,15 @@ const PendingServicesScreenUser = () => {
         ID.unique(),
         {
           description,
-          isRead: false,
-          createdAt: new Date().toISOString(),
+          IsRead: false, // Changed to match collection schema
           userEmail,
+          // Remove createdAt as Appwrite handles this automatically
         }
       );
-      console.log('Notification sent to:', userEmail);
+      console.log('Notification created successfully');
     } catch (error) {
       console.error('Notification creation failed:', error);
+      throw error;
     }
   };
 
@@ -190,6 +191,7 @@ const PendingServicesScreenUser = () => {
           text: 'Complete',
           onPress: async () => {
             try {
+              // First update the service status
               await databases.updateDocument(
                 DATABASE_ID,
                 COLLECTION_ID,
@@ -198,22 +200,29 @@ const PendingServicesScreenUser = () => {
               );
 
               const completedService = services.find(service => service.id === id);
-              if (completedService) {
+              if (!completedService) return;
+
+              // Then try to create notification
+              try {
                 await createNotification(
-                  `${completedService.clientName}'s ${completedService.serviceType} service has been marked as completed.`,
+                  `Service completed: ${completedService.serviceType} for ${completedService.clientName}`,
                   completedService.serviceboyEmail
                 );
-
-
-                setServices(prev => prev.filter(service => service.id !== id));
-
-                router.push({
-                  pathname: '/userapp/usercompleted',
-                  params: {
-                    completedService: JSON.stringify(completedService)
-                  }
-                });
+              } catch (notificationError) {
+                console.warn('Notification failed (service still completed):', notificationError);
               }
+
+              // Update local state
+              setServices(prev => prev.filter(service => service.id !== id));
+              setAllServices(prev => prev.filter(service => service.id !== id));
+
+              // Navigate with completed service data
+              router.push({
+                pathname: '/userapp/usercompleted',
+                params: {
+                  completedService: JSON.stringify(completedService)
+                }
+              });
             } catch (error) {
               console.error('Error completing service:', error);
               Alert.alert('Error', 'Failed to complete service');

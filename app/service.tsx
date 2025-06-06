@@ -43,7 +43,7 @@ const ServicePage = () => {
     fetchAllUsers();
   }, []);
 
-  const createNotification = async (description: string, userEmail: string) => {
+ const createNotification = async (description: string, userEmail: string) => {
     try {
       await databases.createDocument(
         DATABASE_ID,
@@ -61,7 +61,6 @@ const ServicePage = () => {
       console.error('Notification creation failed:', error);
     }
   };
-
   const handleImagePress = (serviceKey: ServiceKey) => {
     setSelectedServiceType(serviceKey);
     setModalVisible(true);
