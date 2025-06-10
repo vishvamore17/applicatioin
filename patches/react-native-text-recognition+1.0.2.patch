@@ -6,65 +6,53 @@ index b76e895..c5ddf49 100644
      if (project == rootProject) {
          repositories {
              google()
--            mavenCentral()
-+            mavenCentral()
+             mavenCentral()
          }
  
          dependencies {
-# -            classpath 'com.android.tools.build:gradle:3.5.3'
-+            classpath 'com.android.tools.build:gradle:8.0.2'
+          classpath 'com.android.tools.build:gradle:8.0.2' // ✅ Must be 7.0.0 or above
          }
      }
  }
  
  apply plugin: 'com.android.library'
  
-
+-def safeExtGet(prop, fallback) {
+-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+-}
+-
  android {
 -    compileSdkVersion safeExtGet('TextRecognition_compileSdkVersion', 35)
-+    compileSdkVersion 35 // ✅ Must be 30 or above (preferably 33+)
+-    buildToolsVersion safeExtGet('TextRecognition_buildToolsVersion', '29.0.2')
 +
      defaultConfig {
 -        minSdkVersion safeExtGet('TextRecognition_minSdkVersion', 21)
 -        targetSdkVersion safeExtGet('TextRecognition_targetSdkVersion', 35)
-+        minSdkVersion 21
-+        targetSdkVersion 35
          versionCode 1
          versionName "1.0"
--
      }
- 
+
      buildTypes {
-@@ -33,29 +28,27 @@ android {
-             minifyEnabled false
          }
      }
-+
-+    compileOptions {
+
+     compileOptions {
 +        sourceCompatibility JavaVersion.VERSION_11 // ✅ JDK 11
 +        targetCompatibility JavaVersion.VERSION_11
 +    }
 +
      lintOptions {
          disable 'GradleCompatible'
-     }
--    compileOptions {
--        sourceCompatibility JavaVersion.VERSION_11
--        targetCompatibility JavaVersion.VERSION_11
--    }
  }
  
  repositories {
-+    google()
-+    mavenCentral()
+     google()
+     mavenCentral()
      mavenLocal()
      maven {
 -        // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
          url("$rootDir/../node_modules/react-native/android")
      }
--    google()
--    jcenter()
--    mavenCentral()
  }
  
  dependencies {
