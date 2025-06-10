@@ -23,7 +23,6 @@ index b76e895..c5ddf49 100644
 -
  android {
 -    compileSdkVersion safeExtGet('TextRecognition_compileSdkVersion', 35)
--    buildToolsVersion safeExtGet('TextRecognition_buildToolsVersion', '29.0.2')
 +
      defaultConfig {
 -        minSdkVersion safeExtGet('TextRecognition_minSdkVersion', 21)
