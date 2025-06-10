@@ -1,0 +1,87 @@
+diff --git a/node_modules/react-native-text-recognition/android/build.gradle b/node_modules/react-native-text-recognition/android/build.gradle
+index b76e895..c5ddf49 100644
+--- a/node_modules/react-native-text-recognition/android/build.gradle
++++ b/node_modules/react-native-text-recognition/android/build.gradle
+@@ -2,30 +2,25 @@ buildscript {
+     if (project == rootProject) {
+         repositories {
+             google()
+-            mavenCentral()
++            mavenCentral()
+         }
+ 
+         dependencies {
+# -            classpath 'com.android.tools.build:gradle:3.5.3'
++            classpath 'com.android.tools.build:gradle:8.0.2'
+         }
+     }
+ }
+ 
+ apply plugin: 'com.android.library'
+ 
+
+ android {
+-    compileSdkVersion safeExtGet('TextRecognition_compileSdkVersion', 35)
++    compileSdkVersion 35 // ✅ Must be 30 or above (preferably 33+)
++
+     defaultConfig {
+-        minSdkVersion safeExtGet('TextRecognition_minSdkVersion', 21)
+-        targetSdkVersion safeExtGet('TextRecognition_targetSdkVersion', 35)
++        minSdkVersion 21
++        targetSdkVersion 35
+         versionCode 1
+         versionName "1.0"
+-
+     }
+ 
+     buildTypes {
+@@ -33,29 +28,27 @@ android {
+             minifyEnabled false
+         }
+     }
++
++    compileOptions {
++        sourceCompatibility JavaVersion.VERSION_11 // ✅ JDK 11
++        targetCompatibility JavaVersion.VERSION_11
++    }
++
+     lintOptions {
+         disable 'GradleCompatible'
+     }
+-    compileOptions {
+-        sourceCompatibility JavaVersion.VERSION_11
+-        targetCompatibility JavaVersion.VERSION_11
+-    }
+ }
+ 
+ repositories {
++    google()
++    mavenCentral()
+     mavenLocal()
+     maven {
+-        // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+         url("$rootDir/../node_modules/react-native/android")
+     }
+-    google()
+-    jcenter()
+-    mavenCentral()
+ }
+ 
+ dependencies {
+-    //noinspection GradleDynamicVersion
+-    implementation "com.facebook.react:react-native:+"  // From node_modules
++    implementation "com.facebook.react:react-native:+"
+     implementation 'com.google.android.gms:play-services-mlkit-text-recognition:16.3.0'
+-
+ }
+diff --git a/node_modules/react-native-text-recognition/android/gradle/wrapper/gradle-wrapper.properties b/node_modules/react-native-text-recognition/android/gradle/wrapper/gradle-wrapper.properties
+index 1b16c34..f42e62f 100644
+--- a/node_modules/react-native-text-recognition/android/gradle/wrapper/gradle-wrapper.properties
++++ b/node_modules/react-native-text-recognition/android/gradle/wrapper/gradle-wrapper.properties
+@@ -1,5 +1,5 @@
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-6.1.1-bin.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-7.6-all.zip
+ zipStoreBase=GRADLE_USER_HOME
+ zipStorePath=wrapper/dists

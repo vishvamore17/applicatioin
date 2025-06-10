@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/images/logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.markwatson.service_vale",
+      "package": "com.vishva1793.service_vale",
       "intentFilters": [
         {
           "action": "VIEW",
